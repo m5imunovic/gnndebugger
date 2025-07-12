@@ -56,6 +56,7 @@ def infere(cfg: DictConfig) -> None:
     if model_path is None or not Path(model_path).exists():
         log.error(f"No model path {model_path} provided.")
         return
+
     if cfg.lja_mode:
         log.info("Converting LJA graph...")
         lja_to_graph(Path(cfg.datamodules.dataset_path), create_test_dir=True)
@@ -63,6 +64,11 @@ def infere(cfg: DictConfig) -> None:
     datamodule: pl.LightningDataModule = hydra.utils.instantiate(cfg.datamodules)
     log.info("Init model...")
     model: pl.LightningModule = hydra.utils.instantiate(cfg.models)
+
+    # count and print the number of parameters
+    model.eval()
+    total_params = sum(p.numel() for p in model.parameters())
+    log.info(f"Total number of parameters: {total_params}")
     log.info("Init loggers...")
     loggers = instantiate_component_list(cfg.loggers)
 

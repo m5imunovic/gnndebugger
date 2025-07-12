@@ -1,4 +1,5 @@
 import json
+import resource
 from pathlib import Path
 
 import numpy as np
@@ -6,10 +7,53 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from torchmetrics.regression import MeanSquaredError
+from torch.profiler import ProfilerActivity, record_function
 
 from eval.inference_metrics import InferenceMetrics
 from models.loss.mixture_loss import MixtureLoss
 from utils.container import Container
+from utils.logger import get_logger
+
+
+log = get_logger(__name__)
+
+
+def print_resource_memory_usage(stage):
+    rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    log.info(f"{stage} resource max rss is: {rss/1024} MB")
+
+
+def print_proc_memory_usage(stage):
+    """Memory usage of the current process in kilobytes."""
+    status = None
+    result = {"VmSize": 0, "VmRSS": 0, "VmPeak": 0, "VmHWM": 0}
+    try:
+        # This will only work on systems with a /proc file system
+        # (like Linux).
+        status = open("/proc/self/status")
+        for line in status:
+            for key in result:
+                if key in line:
+                    parts = line.strip().split(":")
+                    result[key] = parts[1].strip()
+                else:
+                    continue
+                    # print(key)
+    finally:
+        if status is not None:
+            status.close()
+    result_con = ", ".join([f"{k}: {v}" for k, v in result.items()])
+    log.info(f"{stage} /proc/self/status poll: {result_con}")
+    return result_con
+
+
+def print_cuda_memory_alloc(stage):
+    if torch.cuda.is_available():
+        # torch.cuda.reset_peak_memory_stats(device=None)
+
+        log.info(f"{stage} cuda max memory allocated: {torch.cuda.max_memory_allocated(device=None) / 1024**2}")
+        log.info(f"{stage} cuda memory allocated: {torch.cuda.memory_allocated(device=None) / 1024**2}")
+        log.info(f"{stage} cuda memory reserved: {torch.cuda.memory_reserved(device=None) / 1024**2}")
 
 
 def postprocess_scores(data, scores, high=None, low=None, mincov=None):
@@ -47,6 +91,7 @@ class DBGRegressionModule(pl.LightningModule):
         batch_size: int = 1,
         threshold: int = 0.5,  # in regression setting we use this to adapt range for softmax operation
         storage_path: Path | None = None,
+        profiler: bool = False,
         postprocess: bool = True,
         high: float = None,
         low: float = None,
@@ -70,6 +115,8 @@ class DBGRegressionModule(pl.LightningModule):
         # test metrics
         self.test_metrics = InferenceMetrics(threshold=self.hparams.threshold)
         self.storage_path = None
+        self.profiler = profiler
+
         if storage_path is not None:
             self.storage_path = Path(storage_path)
             self.storage_path.mkdir(exist_ok=True, parents=True)
@@ -93,6 +140,7 @@ class DBGRegressionModule(pl.LightningModule):
         device = edge_index.device
         edge_attr = getattr(batch.data, "edge_attr", None)
         graph_attr = getattr(batch.data, "graph_attr", None)
+        log.info(f"Shape of edge_index is: {edge_attr.shape}")
         ei_ptr = torch.tensor(batch.ei_ptr, device=device)
 
         scores = self.net(x=x.float(), edge_index=edge_index, edge_attr=edge_attr, graph_attr=graph_attr, ei_ptr=ei_ptr)
@@ -183,7 +231,25 @@ class DBGRegressionModule(pl.LightningModule):
         self.val_metric.reset()
 
     def test_step(self, batch, batch_idx, dataloader_idx=0):
-        scores, expected_scores = self.common_step(batch, batch_idx, dataloader_idx)
+        print_cuda_memory_alloc("Initial")
+        print_proc_memory_usage("Initial")
+        print_resource_memory_usage("Initial")
+
+        if self.profiler:
+            with torch.profiler.profile(
+                activities=[ProfilerActivity.CPU],
+                profile_memory=True,
+                record_shapes=False,
+            ) as prof:
+                with record_function("inference"):
+                    scores, expected_scores = self.common_step(batch, batch_idx, dataloader_idx)
+            log.info(prof.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=100))
+        else:
+            scores, expected_scores = self.common_step(batch, batch_idx, dataloader_idx)
+
+        print_cuda_memory_alloc("Final")
+        print_proc_memory_usage("Final")
+        print_resource_memory_usage("Final")
         scores = scores.reshape((1, -1))
         expected_scores = expected_scores.reshape((1, -1))
         if self.storage_path is not None and self.batch_size == 1:
@@ -215,7 +281,25 @@ class DBGRegressionModule(pl.LightningModule):
                 json.dump(cfg, f)
 
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
-        scores, _ = self.common_step(batch, batch_idx, dataloader_idx)
+        print_cuda_memory_alloc("Initial")
+        print_proc_memory_usage("Initial")
+        print_resource_memory_usage("Initial")
+
+        if self.profiler:
+            with torch.profiler.profile(
+                activities=[ProfilerActivity.CPU],
+                profile_memory=True,
+                record_shapes=False,
+            ) as prof:
+                with record_function("inference"):
+                    scores, _ = self.common_step(batch, batch_idx, dataloader_idx)
+            log.info(prof.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=100))
+        else:
+            scores, _ = self.common_step(batch, batch_idx, dataloader_idx)
+
+        print_cuda_memory_alloc("Final")
+        print_proc_memory_usage("Final")
+        print_resource_memory_usage("Final")
         scores = scores - self.hparams.threshold
         scores = torch.clamp(scores, min=0)
         if self.storage_path is not None:
