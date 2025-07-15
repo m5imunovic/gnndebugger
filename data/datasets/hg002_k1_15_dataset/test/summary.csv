@@ -1,0 +1,4 @@
+Subset,Id,Species,Chromosomes,Nodes,Edges,Seed,Probability,ProfileId,Depth,RunId,Schema,Revision
+test,0,hg002.yaml,['chr3'],319076,463984,30090,0.440,,,250714_222958,0.0.3,1
+test,1,hg002.yaml,['chr21'],84222,122234,30270,0.440,,,250714_222958,0.0.3,1
+test,2,hg002.yaml,['chr18'],133792,195074,30200,0.440,,,250715_001222,0.0.3,2

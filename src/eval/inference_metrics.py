@@ -34,7 +34,9 @@ class InferenceMetrics:
     def update(self, scores: torch.Tensor, expected_scores: torch.Tensor, sample_path: Path | list[Path]):
         prediction = torch.clamp(scores, min=0.0, max=1.0)
         target = expected_scores.bool().long()
-        roc = BinaryROC(thresholds=self.thresholds).to(target.get_device())
+        roc = BinaryROC(thresholds=self.thresholds)
+        if target.get_device() >= 0:
+            roc.to(target.device)
         false_positives, true_positives, _ = roc(prediction, target)
         self.false_positives.append(false_positives)
         self.true_positives.append(true_positives)

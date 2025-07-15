@@ -142,3 +142,32 @@ apptainer run \
 ```
 
 Datasets for training and tests are available at [Zenodo](https://doi.org/10.5281/zenodo.15073168), along with the sample configurations.
+
+### Inference on the test set
+
+We provide a small dataset in `data/datasets`, model and configuration for testing purposes. In order to run the inference first export the `PROJECT_ROOT`:
+
+```Bash
+export PROJECT_ROOT=$(pwd)
+```
+
+in the root directory of the project. The configuration system depends on this variable (see `paths.root_dir` config value).
+Note that, thanks to the `Hydra` one can also override this value via command line using `paths.root_dir=<path_to_root_dir>`.
+
+In order to run the inference with default settings simply run (with activated virtual environment):
+
+```Bash
+python3 src/inference.py --config-dir=configs --config-name=inference_test_dataset.yaml
+```
+
+By default inference is run on CPU. To switch the computation to CUDA GPU use:
+
+```Bash
+python3 src/inference.py --config-dir=configs --config-name=inference_test_dataset.yaml trainer.accelerator=cuda
+```
+
+One can metadata (stats, transformed dataset) by setting the `models.storage_path` config value to non-null value, e.g.:
+
+```Bash
+python3 src/inference.py --config-dir=configs --config-name=inference_test_dataset.yaml models.storage_path=/tmp/inference_metadata
+```
