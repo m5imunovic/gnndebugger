@@ -90,12 +90,15 @@ class LayeredGAT(nn.Module):
                     for _ in range(num_layers)
                 ]
             )
+        self.relu = nn.ReLU()
 
     def forward(self, x, edge_index, edge_attr=None):
         if not self.use_edge_features:
             edge_attr = None
-        for gnn_layer in self.gnn:
-            h = gnn_layer(x=x, edge_index=edge_index, edge_attr=edge_attr)
+        for idx in range(len(self.gnn) - 1):
+            x = self.gnn[idx](x=x, edge_index=edge_index, edge_attr=edge_attr)
+            x = self.relu(x)
+        h = self.gnn[-1](x=x, edge_index=edge_index, edge_attr=edge_attr)
         return h
 
 
