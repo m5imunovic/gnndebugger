@@ -1,7 +1,0 @@
-_target_: models.net.gat_digraph.GATDiGraphNet
-num_layers: 2
-node_features: 5
-hidden_features: 16
-heads: 3
-concat: True
-edge_features: 2
