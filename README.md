@@ -45,7 +45,7 @@ Our top-level configuration contains following sections:
 - trainer
 - experiment
 
-`hydra` contain the logging configurations. `hydra` takes care of system logs.
+`hydra` contains the logging configurations. `loggers` takes care of system logs.
 `paths` configuration defines the paths used by the framework (e.g. where the datasets are located `paths.dataset_dir`, where the output files will be saved `paths.storage_dir`, the root directory of model for inference `paths.model_dir`, etc.). In the default configuration, this paths are relative to the `paths.data_dir` which is set to `null` so user needs to override it, depending on the local setup. For example, if you place your files in the following structure:
 
 ```Bash
