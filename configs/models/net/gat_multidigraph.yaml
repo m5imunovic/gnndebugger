@@ -1,8 +1,8 @@
 _target_: models.net.gat_multidigraph.GATMultiDiGraphNet
 num_layers: 2
-node_features: 5
+node_features: 2
 edge_features: 2
-hidden_features: 16
+hidden_features: 32
 gate: bidirect
 heads: 3
 concat: True
