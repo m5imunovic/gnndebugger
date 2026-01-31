@@ -28,8 +28,8 @@ class ResGatedMultiDiGraphNet(nn.Module):
             self.W32 = nn.Linear(hidden_features, hidden_features, bias=True)
 
         self.gate = LayeredGatedGCN(num_layers=num_layers, hidden_features=hidden_features, gate=gate)
-        self.ln1 = nn.LayerNorm(hidden_features)
-        self.ln2 = nn.LayerNorm(hidden_features)
+        self.ln1 = nn.LayerNorm(hidden_features)  # TODO: Unused. Delete?
+        self.ln2 = nn.LayerNorm(hidden_features)  # TODO: Unused. Delete?
 
         # TODO: check if increasing capacity or adding dropout here helps
         self.scorer1 = nn.Linear(3 * hidden_features, hidden_features, bias=True)
@@ -56,6 +56,8 @@ class ResGatedMultiDiGraphNet(nn.Module):
             repeat_interleave = ei_ptr
             g = self.W32(torch.relu(self.W31(graph_attr)))
             features = g.repeat_interleave(repeat_interleave, dim=0)
+            # TODO: Suggestion to replace the line above with
+            # features = g.repeat_interleave(score.shape[0], dim=0)
             score = torch.cat([score, features], dim=1)
 
         score = self.scorer2(score)
