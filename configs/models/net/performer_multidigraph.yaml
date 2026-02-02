@@ -1,0 +1,9 @@
+_target_: models.net.performer_multidigraph.PerformerMultiDiGraphNet
+num_layers: 2
+node_features: 5
+edge_features: 2
+hidden_features: 16
+gate: bidirect
+heads: 1
+qkv_bias: False
+layer_norm: True
