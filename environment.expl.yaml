@@ -1,0 +1,50 @@
+name: fenv
+
+channels:
+  - pyg
+  - pytorch
+  - nvidia
+
+dependencies:
+  - python=3.11
+  - pip
+
+  # ML
+  - pytorch::pytorch=2.4.*
+  - pytorch::pytorch-cuda=12.4
+  - pytorch::torchvision
+  - pytorch::torchaudio
+  - pyg::pyg
+  - pyg::pytorch-sparse
+  - pyg::pytorch-cluster
+  - conda-forge::pytorch-lightning=2.5.0.post0
+  - conda-forge::lightning=2.5.0.post0
+  - conda-forge::torchmetrics=1.6.1
+  - nvidia::cudatoolkit
+  - wandb
+
+  # Math
+  - numpy=1.26.4
+  - scipy
+
+  #Analysis
+  - matplotlib
+  - networkx
+  - pandas
+
+  # Config
+  - colorlog
+  - hydra-core
+  - pyyaml
+
+  # Testing
+  - pre-commit
+  - pytest
+  - pytest-xdist
+  - typeguard
+
+  # Other
+  - tqdm
+
+  - pip:
+      - hydra-colorlog
