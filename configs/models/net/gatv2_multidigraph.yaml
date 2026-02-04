@@ -1,4 +1,4 @@
-_target_: models.net.gat_multidigraph.GATv2MultiDiGraphNet
+_target_: models.net.gatv2_multidigraph.GATv2MultiDiGraphNet
 num_layers: 2
 node_features: 2
 edge_features: 4
